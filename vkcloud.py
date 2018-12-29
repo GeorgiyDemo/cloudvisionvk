@@ -36,7 +36,9 @@ def localize_objects(path):
             draw.line(box + [box[0]], width=5, fill='#%02X%02X%02X' % (r(),r(),r()))
             draw.text(box[0], object_.name+" "+str(object_.score), font=ImageFont.truetype("~/Library/Fonts/MuseoSansCyrl-300.ttf",30))
     image_file.close()
-    im.save("output"+path+".png")
+    outstring = "output"+path+".png"
+    im.save(outstring)
+    return outstring
 
 def main():
 	#Основная конфигурация
@@ -72,19 +74,23 @@ def main():
 		).json()
 
 		checker = False
-		try:
+		if 'failed' in response:
+			key = api.messages.getLongPollServer(v=APIVersion)['key']
+		else:
 			for i in range(len(response['updates'])):
 				if checker != True:
 					try:
-						
+							
 						message_longpoll = response['updates'][i][5]
 						chat_longpoll = response['updates'][i][3]
+						attaches = response['updates'][0][6]
 						checker = True
 
 					except:
 						pass
 
 			if checker == False:
+				attaches = [0]
 				message_longpoll = [0]
 				chat_longpoll = [0]
 
@@ -93,19 +99,18 @@ def main():
 
 			#Чекаем входящие сообщения
 			if message_longpoll != [0]:
-				attaches = response['updates'][0][6]
 				if attaches["attach1_type"] == "photo":
 					photo_json = api.messages.getById(message_ids=response['updates'][0][1],v=APIVersion)["items"][0]["attachments"][0]["photo"]
-						
+							
 					#Простите
 					keyname = ""
 					for key in photo_json:
 						if key[:5] == "photo":
 							keyname = key
-					localize_objects(getfile(photo_json[keyname]))
-		
-		except KeyError:
-			pass
+					server_url = api.photos.getMessagesUploadServer(peer_id=chat_longpoll,v=APIVersion)["upload_url"]
+					photo_response = requests.post(server_url,files={'photo': open(localize_objects(getfile(photo_json[keyname])), 'rb')}).json()
+					photo_final = api.photos.saveMessagesPhoto(photo=photo_response["photo"],server=photo_response["server"],hash=photo_response["hash"],v=APIVersion)[0]
+					api.messages.send(user_id=chat_longpoll,attachment="photo"+str(photo_final["owner_id"])+"_"+str(photo_final["id"]),v=APIVersion)
 
 if __name__ == '__main__':
 	main()
