@@ -139,24 +139,26 @@ def main():
 			if message_longpoll != [0]:
 
 				if message_longpoll == "Да":
-					api.messages.send(user_id=chat_longpoll,message="Готово ✨",v=APIVersion)
+					if chat_longpoll in main_obj:
+						api.messages.send(user_id=chat_longpoll,message="Готово ✨",v=APIVersion)
 
-					UserVKSession = vk.Session(access_token=USER_TOKEN)
-					UserAPI = vk.API(UserVKSession)
-					user_server_url = UserAPI.photos.getWallUploadServer(group_id=CLUB_ID[1:],v=APIVersion)["upload_url"]
+						UserVKSession = vk.Session(access_token=USER_TOKEN)
+						UserAPI = vk.API(UserVKSession)
+						user_server_url = UserAPI.photos.getWallUploadServer(group_id=CLUB_ID[1:],v=APIVersion)["upload_url"]
 
-					user_photo_response = requests.post(user_server_url,files={'photo': open(main_obj[chat_longpoll][0], 'rb')}).json()
-					user_photo_final = UserAPI.photos.saveWallPhoto(group_id=CLUB_ID[1:],photo=user_photo_response["photo"],server=user_photo_response["server"],hash=user_photo_response["hash"],caption=main_obj[chat_longpoll][1],v=APIVersion)[0]
-					user_photo_str = "photo"+str(user_photo_final["owner_id"])+"_"+str(user_photo_final["id"])
-					
-					UserAPI.wall.post(owner_id=CLUB_ID,from_group=1,message=main_obj[chat_longpoll][1],attachments=user_photo_str,v=APIVersion)
-					os.remove(main_obj[chat_longpoll][0])
-					main_obj.pop(chat_longpoll, None)
+						user_photo_response = requests.post(user_server_url,files={'photo': open(main_obj[chat_longpoll][0], 'rb')}).json()
+						user_photo_final = UserAPI.photos.saveWallPhoto(group_id=CLUB_ID[1:],photo=user_photo_response["photo"],server=user_photo_response["server"],hash=user_photo_response["hash"],caption=main_obj[chat_longpoll][1],v=APIVersion)[0]
+						user_photo_str = "photo"+str(user_photo_final["owner_id"])+"_"+str(user_photo_final["id"])
+						
+						UserAPI.wall.post(owner_id=CLUB_ID,from_group=1,message=main_obj[chat_longpoll][1],attachments=user_photo_str,v=APIVersion)
+						os.remove(main_obj[chat_longpoll][0])
+						main_obj.pop(chat_longpoll, None)
 
 				elif message_longpoll == "Нет":
-					api.messages.send(user_id=chat_longpoll,message="Хорошо 😌",v=APIVersion)
-					os.remove(main_obj[chat_longpoll][0])
-					main_obj.pop(chat_longpoll, None)
+					if chat_longpoll in main_obj:
+						api.messages.send(user_id=chat_longpoll,message="Хорошо 😌",v=APIVersion)
+						os.remove(main_obj[chat_longpoll][0])
+						main_obj.pop(chat_longpoll, None)
 
 				elif attaches["attach1_type"] == "photo":
 					photo_json = api.messages.getById(message_ids=response['updates'][0][1],v=APIVersion)["items"][0]["attachments"][0]["photo"]
