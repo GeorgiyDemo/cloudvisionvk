@@ -1,5 +1,4 @@
-import pymysql.cursors, vk, time, json, requests, uuid
-import argparse, random, io, re, os, time, requests
+import pymysql.cursors, vk, time, json, uuid, random, io, re, os, time, requests
 from PIL import Image, ImageDraw, ImageFont
 from google.cloud import vision
 
@@ -160,23 +159,27 @@ def main():
 						os.remove(main_obj[chat_longpoll][0])
 						main_obj.pop(chat_longpoll, None)
 
-				elif attaches["attach1_type"] == "photo":
-					photo_json = api.messages.getById(message_ids=response['updates'][0][1],v=APIVersion)["items"][0]["attachments"][0]["photo"]
-							
-					#Простите
-					keyname = ""
-					for key in photo_json:
-						if key[:5] == "photo":
-							keyname = key
+				elif "attach1_type" in attaches:
+					if attaches["attach1_type"] == "photo":
+						photo_json = api.messages.getById(message_ids=response['updates'][0][1],v=APIVersion)["items"][0]["attachments"][0]["photo"]
+								
+						#Простите
+						keyname = ""
+						for key in photo_json:
+							if key[:5] == "photo":
+								keyname = key
 
-					server_url = api.photos.getMessagesUploadServer(peer_id=chat_longpoll,v=APIVersion)["upload_url"]
-					thisfilename = getfile(photo_json[keyname])
-					message_final = objects_formater(localize_objects(thisfilename))
-					photo_response = requests.post(server_url,files={'photo': open(thisfilename, 'rb')}).json()
-					photo_final = api.photos.saveMessagesPhoto(photo=photo_response["photo"],server=photo_response["server"],hash=photo_response["hash"],v=APIVersion)[0]
-					photo_str = "photo"+str(photo_final["owner_id"])+"_"+str(photo_final["id"])
-					api.messages.send(user_id=chat_longpoll,message="Ваши результаты:\n"+message_final+"\nХотите поделиться этим фото в сообществе?",attachment=photo_str,keyboard=json.dumps(request_keyboard,ensure_ascii=False),v=APIVersion)
-					main_obj[chat_longpoll]=[thisfilename, message_final]
+						server_url = api.photos.getMessagesUploadServer(peer_id=chat_longpoll,v=APIVersion)["upload_url"]
+						thisfilename = getfile(photo_json[keyname])
+						message_final = objects_formater(localize_objects(thisfilename))
+						photo_response = requests.post(server_url,files={'photo': open(thisfilename, 'rb')}).json()
+						photo_final = api.photos.saveMessagesPhoto(photo=photo_response["photo"],server=photo_response["server"],hash=photo_response["hash"],v=APIVersion)[0]
+						photo_str = "photo"+str(photo_final["owner_id"])+"_"+str(photo_final["id"])
+						if message_final == "":
+							api.messages.send(user_id=chat_longpoll,message="Нет результатов для этого фото\nПопробуй другое 👀",v=APIVersion)
+						else:
+							api.messages.send(user_id=chat_longpoll,message="Ваши результаты:\n"+message_final+"\nХотите поделиться этим фото в сообществе?",attachment=photo_str,keyboard=json.dumps(request_keyboard,ensure_ascii=False),v=APIVersion)
+							main_obj[chat_longpoll]=[thisfilename, message_final]
 
 if __name__ == '__main__':
 	main()
