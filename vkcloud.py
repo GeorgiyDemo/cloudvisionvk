@@ -139,7 +139,6 @@ def main():
 
 				if message_longpoll == "Да":
 					if chat_longpoll in main_obj:
-						api.messages.send(user_id=chat_longpoll,message="Готово ✨",v=APIVersion)
 
 						UserVKSession = vk.Session(access_token=USER_TOKEN)
 						UserAPI = vk.API(UserVKSession)
@@ -149,7 +148,12 @@ def main():
 						user_photo_final = UserAPI.photos.saveWallPhoto(group_id=CLUB_ID[1:],photo=user_photo_response["photo"],server=user_photo_response["server"],hash=user_photo_response["hash"],caption=main_obj[chat_longpoll][1],v=APIVersion)[0]
 						user_photo_str = "photo"+str(user_photo_final["owner_id"])+"_"+str(user_photo_final["id"])
 						
-						UserAPI.wall.post(owner_id=CLUB_ID,from_group=1,message=main_obj[chat_longpoll][1],attachments=user_photo_str,v=APIVersion)
+						try:
+							UserAPI.wall.post(owner_id=CLUB_ID,from_group=1,message=main_obj[chat_longpoll][1],attachments=user_photo_str,v=APIVersion)
+							api.messages.send(user_id=chat_longpoll,message="Готово ✨",v=APIVersion)
+						except vk.exceptions.VkAPIError:
+						    api.messages.send(user_id=chat_longpoll,message="Лимит 50 записей в сообществе в день 😔\nТакие правила VK, но если изображение действительно классное/смешное/красивое - [id257350143|пиши]",v=APIVersion)
+
 						os.remove(main_obj[chat_longpoll][0])
 						main_obj.pop(chat_longpoll, None)
 
