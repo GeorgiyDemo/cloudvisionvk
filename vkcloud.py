@@ -1,4 +1,4 @@
-import pymysql.cursors, vk, time, json, uuid, random, io, re, os, time, requests
+import vk, time, json, uuid, random, io, re, os, time, requests
 from PIL import Image, ImageDraw, ImageFont
 from google.cloud import vision
 
@@ -51,90 +51,8 @@ def objects_formater(obj):
 
 def main():
 
-	main_obj = {}
-	#Основная конфигурация
-	VKSession = vk.Session(access_token=CLUB_TOKEN)
-
-	request_keyboard = {
-	"one_time":True,
-	"buttons":[
-		[
-			{
-			"action":{
-				"type":"text",
-				"payload":"{\"button\": \"1\"}",
-				"label":"Да"
-			},
-			"color":"primary"
-			},
-
-			{
-			"action":{
-				"type":"text",
-				"payload":"{\"button\": \"2\"}",
-				"label":"Нет"
-			},
-			"color":"negative"
-			},
-
-		]
-	]
-	}
-
-	api = vk.API(VKSession)
-	APIVersion = 5.73
-	message_longpoll = [0]
-
-	#Настройка лонгпула
-	server = None
-	key    = None
-	ts     = None
-
-
-	while True:
-
-		#Фикс лонпула по харду
-		if server == None:
-			cfg = api.messages.getLongPollServer(v=APIVersion)
-			server = cfg['server']
-			key = cfg['key']
-			ts = cfg['ts']
-
-		response = requests.post(
-			"https://{server}?act=a_check&key={key}&ts={ts}&wait=25&mode={mode}&version=2".format(**{
-				"server": server,
-				"key": key,
-				"ts": ts,
-				"mode": 2
-			}),
-		timeout=30
-		).json()
-
-		checker = False
-		if 'failed' in response:
-			key = api.messages.getLongPollServer(v=APIVersion)['key']
-		else:
-			for i in range(len(response['updates'])):
-				if checker != True:
-					try:
-							
-						message_longpoll = response['updates'][i][5]
-						chat_longpoll = response['updates'][i][3]
-						attaches = response['updates'][0][6]
-						checker = True
-
-					except:
-						pass
-
-			if checker == False:
-				attaches = [0]
-				message_longpoll = [0]
-				chat_longpoll = [0]
-
-			ts = response['ts']
-
-
-			#Чекаем входящие сообщения
+	
+	
 			if message_longpoll != [0]:
 
 				if message_longpoll == "Да":
