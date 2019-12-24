@@ -134,6 +134,6 @@ class PhotoProcessing():
         self.results = obj_of_objects
 
 
-def async_processing(vk, user_id, url):
+def processing(vk, user_id, url):
     detector = PhotoProcessing(url)
     VkProcessing(vk, user_id, detector.path, detector.results)

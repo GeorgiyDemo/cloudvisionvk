@@ -3,3 +3,4 @@
 *.jpg
 *.pyc
 *.yaml
+.DS_Store

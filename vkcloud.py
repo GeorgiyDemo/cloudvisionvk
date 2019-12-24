@@ -9,8 +9,7 @@ requests.exceptions.SSLError:
     (Caused by SSLError(SSLError(1, '[SSL: DECRYPTION_FAILED_OR_BAD_RECORD_MAC] 
     decryption failed or bad record mac (_ssl.c:2508)')))
 """
-
-import multiprocessing as mp
+#https://stackoverflow.com/questions/10667960/python-requests-throwing-sslerror
 
 import vk_api
 import yaml
@@ -38,8 +37,10 @@ class MainClass():
         """
         Метод для получения url изобржения из id сообщения
         """
+        
         # Получаем сообщеньку по методу
-        r = self.vk.method('messages.getById', {'message_ids': message_id})["items"]
+        r = self.vk.method('messages.getById', {'message_ids': message_id, "group_id" : 175867271})["items"]
+        
         # Находим все размеры фото
         all_sizes = r[0]["attachments"][0]["photo"]["sizes"]
 
@@ -77,13 +78,7 @@ class MainClass():
                     attachments = event.attachments
                     if attachments != {} and attachments["attach1_type"] == "photo":
                         url = self.get_url(msg_id)
-
-                        p = mp.Process(target=imageprocessing.async_processing, args=(self.vk, event.user_id, url,))
-                        p.start()
-
-                        # url = attachments["attach1"]
-                        # Сообщение от пользователя
-
+                        imageprocessing.processing(self.vk, event.user_id, url)
 
 if __name__ == "__main__":
     MainClass()
