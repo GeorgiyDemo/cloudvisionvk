@@ -17,7 +17,7 @@ class VkProcessing():
         self.user_id = user_id
         self.vk = vk
 
-        if message == "":
+        if message == {}:
             self.vk.method('messages.send', {'user_id': self.user_id, 'random_id': get_random_id(),
                                              'message': "Нет результатов для этого фото\nПопробуй другое 👀"})
         else:
@@ -127,7 +127,8 @@ class PhotoProcessing():
                 r = lambda: randint(0, 255)
                 # Рисуем линию + текст
                 draw.line(box + [box[0]], width=5, fill='#%02X%02X%02X' % (r(), r(), r()))
-                draw.text(box[0], obj.name + " " + str(obj.score), font=ImageFont.truetype(TTF_DIR, 30))
+                draw.text(box[0], obj.name + " " + str(obj.score), font=ImageFont.truetype(TTF_DIR, 30), fill=(0,0,0,0))
+                #draw.text(box[0], obj.name + " " + str(obj.score), font=ImageFont.truetype(TTF_DIR, 30))
 
         im.save(path)
         self.results = obj_of_objects
