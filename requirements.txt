@@ -1,0 +1,10 @@
+PyYAML==5.2
+requests==2.22.0
+vk-api==11.6.1
+google-api-core==1.15.0
+google-auth==1.10.0
+google-cloud==0.34.0
+google-cloud-vision==0.41.0
+googleapis-common-protos==1.6.0
+uuid==1.30
+Pillow==6.2.1

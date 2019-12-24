@@ -1,6 +1,7 @@
 import multiprocessing as mp
 
 import vk_api
+import yaml
 from vk_api.longpoll import VkLongPoll, VkEventType
 
 import imageprocessing
