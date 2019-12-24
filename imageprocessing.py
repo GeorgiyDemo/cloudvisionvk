@@ -2,26 +2,68 @@
 import uuid
 import requests
 
+import vk_api
+from vk_api.utils import get_random_id
+
 from random import randint
 from PIL import Image, ImageDraw, ImageFont
 from google.cloud import vision
 
 TTF_DIR = "./MuseoSansCyrl-300.ttf"
 
+class VkProcessing():
+    def __init__(self, vk, user_id, path, message):
+
+        self.path = path
+        self.message = message
+        self.user_id = user_id
+        self.vk = vk
+        
+        if message == "":
+            self.vk.method('messages.send', {'user_id': self.user_id, 'random_id': get_random_id(), 'message': "Нет результатов для этого фото\nПопробуй другое 👀"})
+        else:
+
+            #Загрузка фото
+            self.photo_uploader()
+
+            #Отправка сообщения
+            self.message_sender()
+    
+    def photo_uploader(self):
+
+        server_url = self.vk.method('photos.getMessagesUploadServer', {'peer_id' : self.user_id})["upload_url"]
+        print(server_url)
+        photo_r = requests.post(server_url,files={'photo': open(self.path, 'rb')}).json()
+        print(photo_r)
+        photo_final = self.vk.method("photos.saveMessagesPhoto", {"photo" : photo_r["photo"], "server" : photo_r["server"], "hash": photo_r["hash"]})[0]
+        print(photo_final)
+        photo_str = "photo"+str(photo_final["owner_id"])+"_"+str(photo_final["id"])
+        self.photo_str = photo_str
+
+    def message_sender(self):
+        print("СООБЩЕНИЕ")
+        print(self.message)
+        self.vk.method('messages.send', {
+            'user_id': self.user_id,
+            'random_id': get_random_id(),
+            'message': 'Ваши результаты:\n'+self.message,
+            'attachment' : self.photo_str}
+        )
 
 class PhotoProcessing():
 
     def __init__(self, url):
         self.url = url 
-        self.get_file()
-        #TODO
-        self.path = path
+        self.path = None
         self.results = None
         self.image = None
+        self.get_file()
         self.localize_objects()
 
-    def get_file(url):
-        
+    def get_file(self):
+        """
+        Метод для получения отправленного пользователем фото с vk
+        """
         url = self.url
         path = str(uuid.uuid4())+".jpg"
         r = requests.get(url, stream=True)
@@ -84,12 +126,16 @@ class PhotoProcessing():
                 draw.line(box + [box[0]], width=5, fill='#%02X%02X%02X' % (r(), r(), r()))
                 draw.text(box[0], obj.name + " " + str(obj.score), font=ImageFont.truetype(TTF_DIR, 30))
 
-        self.image = im
+        im.save(path)
         self.results = obj_of_objects
+
+
+def async_processing(vk, user_id, url):
+    detector = PhotoProcessing(url)
+    VkProcessing(vk, user_id, detector.path, detector.results)
 
 
 if __name__ == "__main__":
     thisfilename = "15763474458860.png"
     detector = PhotoProcessing(thisfilename)
-    detector.image.save(thisfilename)
     print(detector.results)
