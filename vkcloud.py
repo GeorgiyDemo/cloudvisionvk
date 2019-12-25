@@ -1,16 +1,6 @@
 #TODO Чёрный шрифт, когда изображение преимущественно белое
 #TODO Белый шрифт, когда изображение преимущественно черное
 
-#TODO 
-"""
-requests.exceptions.SSLError:
-    HTTPSConnectionPool(host='api.vk.com', port=443): 
-    Max retries exceeded with url: /method/messages.getById 
-    (Caused by SSLError(SSLError(1, '[SSL: DECRYPTION_FAILED_OR_BAD_RECORD_MAC] 
-    decryption failed or bad record mac (_ssl.c:2508)')))
-"""
-#https://stackoverflow.com/questions/10667960/python-requests-throwing-sslerror
-
 import vk_api
 import yaml
 from vk_api.longpoll import VkLongPoll, VkEventType
