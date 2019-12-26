@@ -127,8 +127,7 @@ class PhotoProcessing():
                 r = lambda: randint(0, 255)
                 # Рисуем линию + текст
                 draw.line(box + [box[0]], width=5, fill='#%02X%02X%02X' % (r(), r(), r()))
-                draw.text(box[0], obj.name + " " + str(obj.score), font=ImageFont.truetype(TTF_DIR, 30), fill=(0,0,0,0))
-                #draw.text(box[0], obj.name + " " + str(obj.score), font=ImageFont.truetype(TTF_DIR, 30))
+                draw.text(box[0], obj.name + " " + str(obj.score), font=ImageFont.truetype(TTF_DIR, 30))
 
         im.save(path)
         self.results = obj_of_objects
