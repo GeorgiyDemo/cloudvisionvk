@@ -4,54 +4,8 @@ from random import randint
 import requests
 from PIL import Image, ImageDraw, ImageFont
 from google.cloud import vision
-from vk_api.utils import get_random_id
 
 TTF_DIR = "./MuseoSansCyrl-300.ttf"
-
-
-class VkProcessing():
-    def __init__(self, vk, user_id, path, message):
-
-        self.path = path
-        self.message = message
-        self.user_id = user_id
-        self.vk = vk
-
-        if message == {}:
-            self.vk.method('messages.send', {'user_id': self.user_id, 'random_id': get_random_id(),
-                                             'message': "Нет результатов для этого фото\nПопробуй другое 👀"})
-        else:
-
-            # Загрузка фото
-            self.photo_uploader()
-
-            # Отправка сообщения
-            self.message_sender()
-
-    def photo_uploader(self):
-
-        server_url = self.vk.method('photos.getMessagesUploadServer', {'peer_id': self.user_id})["upload_url"]
-        photo_r = requests.post(server_url, files={'photo': open(self.path, 'rb')}).json()
-        photo_final = self.vk.method("photos.saveMessagesPhoto",
-                                     {"photo": photo_r["photo"], "server": photo_r["server"], "hash": photo_r["hash"]})[
-            0]
-        photo_str = "photo" + str(photo_final["owner_id"]) + "_" + str(photo_final["id"])
-        self.photo_str = photo_str
-
-    def message_sender(self):
-        objects_dict = self.message
-
-        out_str = ""
-        for key, value in objects_dict.items():
-            out_str += key + " " + str(int(round(value, 2) * 100)) + "%\n"
-
-        self.vk.method('messages.send', {
-            'user_id': self.user_id,
-            'random_id': get_random_id(),
-            'message': 'Ваши результаты:\n' + out_str,
-            'attachment': self.photo_str}
-                       )
-
 
 class PhotoProcessing():
 
@@ -131,8 +85,3 @@ class PhotoProcessing():
 
         im.save(path)
         self.results = obj_of_objects
-
-
-def processing(vk, user_id, url):
-    detector = PhotoProcessing(url)
-    VkProcessing(vk, user_id, detector.path, detector.results)
