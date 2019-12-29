@@ -1,5 +1,4 @@
-#TODO Чёрный шрифт, когда изображение преимущественно белое
-#TODO Белый шрифт, когда изображение преимущественно черное
+#TODO предложение о добавлении поста в предложку сообщества
 
 import vk_api
 import yaml
@@ -9,16 +8,11 @@ from vk_api.utils import get_random_id
 import requests
 import imageprocessing
 
-TTF_DIR = "./MuseoSansCyrl-300.ttf"
-group_id = 175867271
-
-#TODO id сообщества в yaml
-#TODO путь TTF в yaml
 def get_settings():
     """
         Чтение токена vk с файла yaml
     """
-    with open("./token.yaml", 'r') as stream:
+    with open("./settings.yml", 'r') as stream:
         return yaml.safe_load(stream)
 
 
@@ -74,8 +68,16 @@ class VkProcessing():
 class MainClass():
     def __init__(self):
 
+        self.settings = get_settings()
         # Авторизуемся как сообщество
-        self.vk = vk_api.VkApi(token=get_settings())
+        self.vk = vk_api.VkApi(token=self.settings["token"])
+        #Словарь для флагов режима работы
+        self.msg_dict = {
+            "black" : "black_text",
+            "white" : "white_text",
+            "adaptive" : "adaptive_font",
+        }
+
         self.processing()
 
     def get_url(self, message_id):
@@ -84,7 +86,7 @@ class MainClass():
         """
         
         # Получаем сообщеньку по методу
-        r = self.vk.method('messages.getById', {'message_ids': message_id, "group_id" : group_id})["items"]
+        r = self.vk.method('messages.getById', {'message_ids': message_id, "group_id" : self.settings["group_id"]})["items"]
         
         # Находим все размеры фото
         all_sizes = r[0]["attachments"][0]["photo"]["sizes"]
@@ -124,15 +126,20 @@ class MainClass():
                                              'message': "Привет, просто отправь мне любое фото 🧩"})
 
                     else:
-                        msg_id = event.message_id
+
+                        #Формируем флаги для процессинга изображения
+                        modes_list = []
+                        for key in self.msg_dict.keys():
+                            if key in event.text:
+                                modes_list.append(self.msg_dict[key])
 
                         attachments = event.attachments
                         #Если пришло фото
                         if attachments != {} and attachments["attach1_type"] == "photo":
                             #Получаем url изображения
-                            url = self.get_url(msg_id)
+                            url = self.get_url(event.message_id)
                             #Передаем url модулю-обработчику фото
-                            detector = imageprocessing.PhotoProcessing(url, TTF_DIR)
+                            detector = imageprocessing.PhotoProcessing(url, self.settings["ttf_dir"], modes_list)
                             #Отправляем результаты пользователю
                             VkProcessing(self.vk, event.user_id, detector.path, detector.results)
 
