@@ -4,64 +4,22 @@ from random import randint
 import requests
 from PIL import Image, ImageDraw, ImageFont
 from google.cloud import vision
-from vk_api.utils import get_random_id
-
-TTF_DIR = "./MuseoSansCyrl-300.ttf"
-
-
-class VkProcessing():
-    def __init__(self, vk, user_id, path, message):
-
-        self.path = path
-        self.message = message
-        self.user_id = user_id
-        self.vk = vk
-
-        if message == {}:
-            self.vk.method('messages.send', {'user_id': self.user_id, 'random_id': get_random_id(),
-                                             'message': "Нет результатов для этого фото\nПопробуй другое 👀"})
-        else:
-
-            # Загрузка фото
-            self.photo_uploader()
-
-            # Отправка сообщения
-            self.message_sender()
-
-    def photo_uploader(self):
-
-        server_url = self.vk.method('photos.getMessagesUploadServer', {'peer_id': self.user_id})["upload_url"]
-        photo_r = requests.post(server_url, files={'photo': open(self.path, 'rb')}).json()
-        photo_final = self.vk.method("photos.saveMessagesPhoto",
-                                     {"photo": photo_r["photo"], "server": photo_r["server"], "hash": photo_r["hash"]})[
-            0]
-        photo_str = "photo" + str(photo_final["owner_id"]) + "_" + str(photo_final["id"])
-        self.photo_str = photo_str
-
-    def message_sender(self):
-        objects_dict = self.message
-
-        out_str = ""
-        for key, value in objects_dict.items():
-            out_str += key + " " + str(int(round(value, 2) * 100)) + "%\n"
-
-        self.vk.method('messages.send', {
-            'user_id': self.user_id,
-            'random_id': get_random_id(),
-            'message': 'Ваши результаты:\n' + out_str,
-            'attachment': self.photo_str}
-                       )
-
 
 class PhotoProcessing():
 
-    def __init__(self, url):
+    def __init__(self, url, ttf_dir, modes_list):
+        self.modes_list = modes_list
         self.url = url
+        self.ttf_dir = ttf_dir
         self.path = None
         self.results = None
         self.image = None
         self.get_file()
-        self.localize_objects()
+        
+        if "adaptive_font" in modes_list:
+            self.localize_objects_adaptive()
+        else:
+            self.localize_objects()
 
     def get_file(self):
         """
@@ -119,20 +77,101 @@ class PhotoProcessing():
 
             # Определение контура-прямоугольника с координатами
             box = [(vertex.x * im.width, vertex.y * im.height) for vertex in obj.bounding_poly.normalized_vertices]
-
             # Если это новый контур, то он не в all_coords
             if box not in all_coords:
+
                 all_coords.append(box)
                 # Рандомный цвет обводки
                 r = lambda: randint(0, 255)
                 # Рисуем линию + текст
                 draw.line(box + [box[0]], width=5, fill='#%02X%02X%02X' % (r(), r(), r()))
-                draw.text(box[0], obj.name + " " + str(obj.score), font=ImageFont.truetype(TTF_DIR, 30))
+                if "black_text" in self.modes_list:
+                    draw.text(box[0], obj.name + " " + str(obj.score), font=ImageFont.truetype(self.ttf_dir, 30),fill=(0,0,0))
+                else:
+                    draw.text(box[0], obj.name + " " + str(obj.score), font=ImageFont.truetype(self.ttf_dir, 30),fill=(255,255,255))
 
         im.save(path)
         self.results = obj_of_objects
 
+    def get_resolution(self, box):
+        """
+        Странный метод определения разрешения изображения из boundingbox
+        Необходим для логики localize_objects_adaptive
+        """
+        buf_list = []
+        for i in range(-1,len(box)-1):
+            x,y = box[i]
+            x1, y1 = box[i+1]
+            buf_list.append((x-x1,y-y1))
+        
+        out_w = 0 
+        for w, _ in buf_list:
+            if w != 0.0:
+                out_w = abs(w)
+        
+        return out_w
 
-def processing(vk, user_id, url):
-    detector = PhotoProcessing(url)
-    VkProcessing(vk, user_id, detector.path, detector.results)
+    def localize_objects_adaptive(self):
+        """
+        Метод для формирования, отправки и получения запроса с Google Cloud
+        Использует адаптивный шрифт
+        """
+
+        path = self.path
+
+        # Словарь со всеми объектами
+        obj_of_objects = {}
+        # Список для временного хранения координат boundingbox
+        all_coords = []
+
+        # Открытие изображения
+        im = Image.open(path)
+        draw = ImageDraw.Draw(im)
+
+        # Клиент
+        client = vision.ImageAnnotatorClient()
+        with open(path, 'rb') as image_file:
+            content = image_file.read()
+            image = vision.types.Image(content=content)
+        # Получаем все объекты
+        objects = client.object_localization(image=image).localized_object_annotations
+
+        # Цикл по каждому объекту
+        for obj in objects:
+
+            # Добавляем объект в словарь
+            obj_of_objects[obj.name] = obj.score
+
+            # Определение контура-прямоугольника с координатами
+            box = [(vertex.x * im.width, vertex.y * im.height) for vertex in obj.bounding_poly.normalized_vertices]
+            
+            # Если это новый контур, то он не в all_coords
+            if box not in all_coords:
+
+                all_coords.append(box)
+
+                txt = obj.name + " " + str(int(round(obj.score, 2) * 100)) + "%"
+                #Изначально шрифт 1 
+                fontsize = 1
+                
+                #Получаем разрешение изображения
+                width = self.get_resolution(box)
+                #60% boundingbox используется
+                img_fraction = 0.6
+
+                font = ImageFont.truetype(self.ttf_dir, fontsize)
+                #Пока шрифт будет влезать в диапазон
+                while font.getsize(txt)[0] < img_fraction*width:
+                    fontsize += 1
+                    font = ImageFont.truetype(self.ttf_dir, fontsize)
+                fontsize -= 1
+
+                r = lambda: randint(0, 255)
+                draw.line(box + [box[0]], width=5, fill='#%02X%02X%02X' % (r(), r(), r()))
+                if "black_text" in self.modes_list:
+                    draw.text(box[0], txt, font=ImageFont.truetype(self.ttf_dir, fontsize), fill=(0, 0, 0))
+                else:
+                    draw.text(box[0], txt, font=ImageFont.truetype(self.ttf_dir, fontsize), fill=(255, 255, 255))
+
+        im.save(path)
+        self.results = obj_of_objects
