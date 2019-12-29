@@ -10,7 +10,7 @@ import imageprocessing
 
 def get_settings():
     """
-        Чтение токена vk с файла yaml
+        Чтение настроек с yaml
     """
     with open("./settings.yml", 'r') as stream:
         return yaml.safe_load(stream)
@@ -75,7 +75,10 @@ class MainClass():
         self.msg_dict = {
             "black" : "black_text",
             "white" : "white_text",
+            "Black" : "black_text",
+            "White" : "white_text",
             "adaptive" : "adaptive_font",
+            "Adaptive" : "adaptive_font",
         }
 
         self.processing()
@@ -122,8 +125,8 @@ class MainClass():
                 if event.to_me:
 
                     if event.text == "Начать":
-                        self.vk.method('messages.send', {'user_id': event.user_id, 'random_id': get_random_id(),
-                                             'message': "Привет, просто отправь мне любое фото 🧩"})
+                        message_str = "Привет, просто отправь мне любое фото 🧩\nМожешь также использовать следующие флаги при отправке вложения:\nadaptive - адаптивный шрифт на изображении\nblack - черный шрифт\nwhite - белый шрифт (по умолчанию)"
+                        self.vk.method('messages.send', {'user_id': event.user_id, 'random_id': get_random_id(), 'message': message_str })
 
                     else:
 
