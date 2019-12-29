@@ -72,7 +72,6 @@ class PhotoProcessing():
 
             # Определение контура-прямоугольника с координатами
             box = [(vertex.x * im.width, vertex.y * im.height) for vertex in obj.bounding_poly.normalized_vertices]
-
             # Если это новый контур, то он не в all_coords
             if box not in all_coords:
                 all_coords.append(box)
