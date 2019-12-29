@@ -9,6 +9,8 @@ from vk_api.utils import get_random_id
 import requests
 import imageprocessing
 
+TTF_DIR = "./MuseoSansCyrl-300.ttf"
+group_id = 175867271
 
 #TODO id сообщества в yaml
 #TODO путь TTF в yaml
@@ -82,7 +84,7 @@ class MainClass():
         """
         
         # Получаем сообщеньку по методу
-        r = self.vk.method('messages.getById', {'message_ids': message_id, "group_id" : 175867271})["items"]
+        r = self.vk.method('messages.getById', {'message_ids': message_id, "group_id" : group_id})["items"]
         
         # Находим все размеры фото
         all_sizes = r[0]["attachments"][0]["photo"]["sizes"]
@@ -116,17 +118,23 @@ class MainClass():
 
                 # Если оно имеет метку для бота
                 if event.to_me:
-                    msg_id = event.message_id
 
-                    attachments = event.attachments
-                    #Если пришло фото
-                    if attachments != {} and attachments["attach1_type"] == "photo":
-                        #Получаем url изображения
-                        url = self.get_url(msg_id)
-                        #Передаем url модулю-обработчику фото
-                        detector = imageprocessing.PhotoProcessing(url)
-                        #Отправляем результаты пользователю
-                        VkProcessing(self.vk, event.user_id, detector.path, detector.results)
+                    if event.text == "Начать":
+                        self.vk.method('messages.send', {'user_id': event.user_id, 'random_id': get_random_id(),
+                                             'message': "Привет, просто отправь мне любое фото 🧩"})
+
+                    else:
+                        msg_id = event.message_id
+
+                        attachments = event.attachments
+                        #Если пришло фото
+                        if attachments != {} and attachments["attach1_type"] == "photo":
+                            #Получаем url изображения
+                            url = self.get_url(msg_id)
+                            #Передаем url модулю-обработчику фото
+                            detector = imageprocessing.PhotoProcessing(url, TTF_DIR)
+                            #Отправляем результаты пользователю
+                            VkProcessing(self.vk, event.user_id, detector.path, detector.results)
 
 if __name__ == "__main__":
     MainClass()

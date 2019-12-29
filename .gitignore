@@ -4,3 +4,4 @@
 *.pyc
 *.yaml
 .DS_Store
+*.png

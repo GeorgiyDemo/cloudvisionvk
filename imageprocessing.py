@@ -5,12 +5,11 @@ import requests
 from PIL import Image, ImageDraw, ImageFont
 from google.cloud import vision
 
-TTF_DIR = "./MuseoSansCyrl-300.ttf"
-
 class PhotoProcessing():
 
-    def __init__(self, url):
+    def __init__(self, url, ttf_dir):
         self.url = url
+        self.ttf_dir = ttf_dir
         self.path = None
         self.results = None
         self.image = None
@@ -81,7 +80,7 @@ class PhotoProcessing():
                 r = lambda: randint(0, 255)
                 # Рисуем линию + текст
                 draw.line(box + [box[0]], width=5, fill='#%02X%02X%02X' % (r(), r(), r()))
-                draw.text(box[0], obj.name + " " + str(obj.score), font=ImageFont.truetype(TTF_DIR, 30))
+                draw.text(box[0], obj.name + " " + str(obj.score), font=ImageFont.truetype(self.ttf_dir, 30))
 
         im.save(path)
         self.results = obj_of_objects
